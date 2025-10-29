@@ -12,6 +12,289 @@
         }
     ],
     "paths": {
+        "/api/appointments": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Получить список записей на приём",
+                "description": "Список записей (фильтры/сортировка/пагинация)",
+                "operationId": "appointmentsIndex",
+                "parameters": [
+                    {
+                        "name": "doctor_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "specialization",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Сортировка по дате: asc|desc",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AppointmentCollection"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Создать запись на приём",
+                "description": "Создать запись",
+                "operationId": "appointmentsStore",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppointmentCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Создано",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Appointment"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Валидация"
+                    }
+                }
+            }
+        },
+        "/api/appointments/{id}": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Показать запись",
+                "description": "Показать запись",
+                "operationId": "appointmentsShow",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Appointment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Не найдено"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Обновить запись",
+                "description": "Обновить запись (перенос/редактирование)",
+                "operationId": "appointmentsUpdate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppointmentUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Appointment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Не найдено"
+                    },
+                    "422": {
+                        "description": "Валидация"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Отменить запись (soft delete)",
+                "description": "Удалить (отменить) запись — освобождает слот",
+                "operationId": "appointmentsDestroy",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Appointment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Не найдено"
+                    }
+                }
+            }
+        },
+        "/api/patients/{patient}/appointments": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Получить записи конкретного пациента",
+                "description": "Записи конкретного пациента",
+                "operationId": "appointmentsForPatient",
+                "parameters": [
+                    {
+                        "name": "patient",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "doctor_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "specialization",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AppointmentCollection"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Пациент не найден"
+                    }
+                }
+            }
+        },
         "/api/patients": {
             "get": {
                 "tags": [
@@ -213,6 +496,132 @@
     },
     "components": {
         "schemas": {
+            "Appointment": {
+                "required": [
+                    "id",
+                    "patient_id",
+                    "doctor_name",
+                    "specialization",
+                    "date_time"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "patient_id": {
+                        "description": "ID пациента",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "doctor_name": {
+                        "type": "string",
+                        "example": "Иванов С. П."
+                    },
+                    "specialization": {
+                        "type": "string",
+                        "example": "Терапевт"
+                    },
+                    "date_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-01T14:30:00+05:00"
+                    },
+                    "appointment_status_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentResource": {
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/Appointment"
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentCollection": {
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Appointment"
+                        }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/PaginationLinks"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentCreate": {
+                "required": [
+                    "patient_id",
+                    "doctor_name",
+                    "specialization",
+                    "date_time"
+                ],
+                "properties": {
+                    "patient_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "doctor_name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Иванов С. П."
+                    },
+                    "specialization": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Терапевт"
+                    },
+                    "date_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-01 14:30:00"
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentUpdate": {
+                "properties": {
+                    "patient_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "doctor_name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Иванов С. П."
+                    },
+                    "specialization": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Терапевт"
+                    },
+                    "date_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-02 10:00:00"
+                    }
+                },
+                "type": "object"
+            },
             "Patient": {
                 "required": [
                     "id",
@@ -481,6 +890,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Appointments",
+            "description": "Записи на приём"
+        },
         {
             "name": "Patients",
             "description": "CRUD для пациентов"

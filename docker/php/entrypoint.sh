@@ -5,6 +5,8 @@ WWWUSER="${WWWUSER:-1000}"
 WWWGROUP="${WWWGROUP:-1000}"
 PHP_BIN="${PHP_BIN:-php82}"
 PHP_FPM_BIN="${PHP_FPM_BIN:-php-fpm82}"
+SEED_ON_BOOT="${SEED_ON_BOOT:-}"
+SEED_CLASSES="${SEED_CLASSES:-Database\\Seeders\\DatabaseSeeder}"
 
 addgroup -g "$WWWGROUP" -S www 2>/dev/null || true
 adduser  -u "$WWWUSER" -S -D -H -G www www 2>/dev/null || true
@@ -29,6 +31,15 @@ if [ -f .env ]; then
   APP_ENV_VAL="$(grep -E '^APP_ENV=' .env | cut -d= -f2- | tr -d '\r')"
   APP_ENV_VAL="${APP_ENV_VAL:-local}"
 
+
+  if [ -z "$SEED_ON_BOOT" ]; then
+    if [ "$APP_ENV_VAL" = "local" ]; then
+      SEED_ON_BOOT="1"
+    else
+      SEED_ON_BOOT="0"
+    fi
+  fi
+
   if [ "$DB_CONNECTION" = "mysql" ] && [ -n "$DB_HOST" ]; then
     echo "[entrypoint] Waiting for MySQL at ${DB_HOST}:${DB_PORT}…"
     PASS_OPT=""
@@ -45,9 +56,17 @@ if [ -f .env ]; then
   echo "[entrypoint] Running migrations…"
   $PHP_BIN artisan migrate --force --no-interaction || true
 
+  if [ "$SEED_ON_BOOT" = "1" ]; then
+    echo "[entrypoint] Seeding database (${SEED_CLASSES})…"
+    for CLASS in $SEED_CLASSES; do
+      $PHP_BIN artisan db:seed --force --no-interaction --class="$CLASS" || true
+    done
+  fi
+
   $PHP_BIN artisan optimize:clear || true
 
   if [ "$APP_ENV_VAL" = "local" ]; then
+    echo "[entrypoint] Generating Swagger…"
     $PHP_BIN artisan l5-swagger:generate || true
   fi
 fi
