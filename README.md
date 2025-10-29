@@ -9,6 +9,9 @@
 ## Быстрый старт
 
 ```bash
+# cоздайте/скопируйте файл .env
+cp .env.example .env
+
 # запуск
 ./vendor/bin/sail up -d
 ```
