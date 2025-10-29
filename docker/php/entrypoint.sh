@@ -4,6 +4,7 @@ set -e
 WWWUSER="${WWWUSER:-1000}"
 WWWGROUP="${WWWGROUP:-1000}"
 PHP_BIN="${PHP_BIN:-php82}"
+PHP_FPM_BIN="${PHP_FPM_BIN:-php-fpm82}"
 
 addgroup -g "$WWWGROUP" -S www 2>/dev/null || true
 adduser  -u "$WWWUSER" -S -D -H -G www www 2>/dev/null || true
@@ -25,10 +26,15 @@ if [ -f .env ]; then
   DB_USER="$(grep -E '^DB_USERNAME=' .env | cut -d= -f2- | tr -d '\r')"
   DB_PASS="$(grep -E '^DB_PASSWORD=' .env | cut -d= -f2- | tr -d '\r')"
 
+  APP_ENV_VAL="$(grep -E '^APP_ENV=' .env | cut -d= -f2- | tr -d '\r')"
+  APP_ENV_VAL="${APP_ENV_VAL:-local}"
+
   if [ "$DB_CONNECTION" = "mysql" ] && [ -n "$DB_HOST" ]; then
     echo "[entrypoint] Waiting for MySQL at ${DB_HOST}:${DB_PORT}…"
+    PASS_OPT=""
+    [ -n "$DB_PASS" ] && PASS_OPT="-p${DB_PASS}"
     for i in $(seq 1 120); do
-      if mysqladmin ping -h"${DB_HOST}" -P"${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" --silent 2>/dev/null; then
+      if mysqladmin ping -h"${DB_HOST}" -P"${DB_PORT}" -u"${DB_USER}" ${PASS_OPT} --silent 2>/dev/null; then
         echo "[entrypoint] MySQL is up."
         break
       fi
@@ -40,6 +46,10 @@ if [ -f .env ]; then
   $PHP_BIN artisan migrate --force --no-interaction || true
 
   $PHP_BIN artisan optimize:clear || true
+
+  if [ "$APP_ENV_VAL" = "local" ]; then
+    $PHP_BIN artisan l5-swagger:generate || true
+  fi
 fi
 
-exec php-fpm82 -F
+exec "$PHP_FPM_BIN" -F

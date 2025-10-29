@@ -7,13 +7,53 @@ use App\Http\Requests\Patient\StorePatientRequest;
 use App\Http\Requests\Patient\UpdatePatientRequest;
 use App\Http\Resources\Patient\PatientResource;
 use App\Models\Patient;
-use HttpResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *   name="Patients",
+ *   description="CRUD для пациентов"
+ * )
+ */
 class PatientController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Список пациентов (пагинация и поиск)
+     *
+     * @OA\Get(
+     *   path="/api/patients",
+     *   operationId="patientsIndex",
+     *   tags={"Patients"},
+     *   summary="Получить список пациентов",
+     *   @OA\Parameter(
+     *     name="search",
+     *     in="query",
+     *     description="Поиск по имени/фамилии (LIKE)",
+     *     required=false,
+     *     @OA\Schema(type="string")
+     *   ),
+     *   @OA\Parameter(
+     *     name="per_page",
+     *     in="query",
+     *     description="Размер страницы (по умолчанию 15)",
+     *     required=false,
+     *     @OA\Schema(type="integer", minimum=1, maximum=100)
+     *   ),
+     *   @OA\Response(
+     *     response=200,
+     *     description="Успешно",
+     *     @OA\JsonContent(
+     *       type="object",
+     *       @OA\Property(
+     *         property="data",
+     *         type="array",
+     *         @OA\Items(ref="#/components/schemas/Patient")
+     *       ),
+     *       @OA\Property(property="links", type="object"),
+     *       @OA\Property(property="meta", type="object")
+     *     )
+     *   )
+     * )
      */
     public function index(Request $request)
     {
@@ -28,14 +68,33 @@ class PatientController extends Controller
                 });
             })
             ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->paginate($perPage);
+            ->orderBy('last_name');
 
-        return $patients;
+        $paginator = $patients->paginate($perPage)
+            ->appends($request->only('search', 'per_page'));
+
+        return PatientResource::collection($paginator);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Создать пациента
+     *
+     * @OA\Post(
+     *   path="/api/patients",
+     *   operationId="patientsStore",
+     *   tags={"Patients"},
+     *   summary="Создать пациента",
+     *   @OA\RequestBody(
+     *     required=true,
+     *     @OA\JsonContent(ref="#/components/schemas/PatientCreate")
+     *   ),
+     *   @OA\Response(
+     *     response=201,
+     *     description="Создано",
+     *     @OA\JsonContent(ref="#/components/schemas/Patient")
+     *   ),
+     *   @OA\Response(response=422, description="Валидация")
+     * )
      */
     public function store(StorePatientRequest $request)
     {
@@ -47,7 +106,17 @@ class PatientController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Показать пациента
+     *
+     * @OA\Get(
+     *   path="/api/patients/{id}",
+     *   operationId="patientsShow",
+     *   tags={"Patients"},
+     *   summary="Показать пациента",
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Response(response=200, description="OK", @OA\JsonContent(ref="#/components/schemas/Patient")),
+     *   @OA\Response(response=404, description="Не найден")
+     * )
      */
     public function show(Patient $patient)
     {
@@ -55,7 +124,19 @@ class PatientController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Обновить пациента
+     *
+     * @OA\Put(
+     *   path="/api/patients/{id}",
+     *   operationId="patientsUpdate",
+     *   tags={"Patients"},
+     *   summary="Обновить пациента",
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/PatientUpdate")),
+     *   @OA\Response(response=200, description="OK", @OA\JsonContent(ref="#/components/schemas/Patient")),
+     *   @OA\Response(response=404, description="Не найден"),
+     *   @OA\Response(response=422, description="Валидация")
+     * )
      */
     public function update(UpdatePatientRequest $request, Patient $patient)
     {
@@ -64,7 +145,17 @@ class PatientController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Удалить пациента
+     *
+     * @OA\Delete(
+     *   path="/api/patients/{id}",
+     *   operationId="patientsDestroy",
+     *   tags={"Patients"},
+     *   summary="Удалить пациента",
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Response(response=204, description="Удалено"),
+     *   @OA\Response(response=404, description="Не найден")
+     * )
      */
     public function destroy(Patient $patient)
     {
