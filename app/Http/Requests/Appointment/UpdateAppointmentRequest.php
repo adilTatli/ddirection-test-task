@@ -40,10 +40,18 @@ class UpdateAppointmentRequest extends FormRequest
             if (!$appointment) return;
 
             $patientId  = (int) ($this->input('patient_id', $appointment->patient_id));
-            $doctorName = (string) ($this->input('doctor_name', $appointment->doctor_name));
-            $dateStr    = (string) ($this->input('date_time', optional($appointment->date_time)->format('Y-m-d H:i:s')));
+            $doctorName = (string) ($this->input('doctor_name',  $appointment->doctor_name));
+            $dateStr    = (string) ($this->input(
+                'date_time',
+                optional($appointment->date_time)->format('Y-m-d H:i:s')
+            ));
 
-            $dt = Carbon::createFromFormat('Y-m-d H:i:s', $dateStr, config('app.timezone', 'UTC'));
+            try {
+                $dt = Carbon::createFromFormat('Y-m-d H:i:s', $dateStr, config('app.timezone', 'UTC'));
+            } catch (\Throwable $e) {
+                return;
+            }
+
             if ($dt->second !== 0 || ($dt->minute % self::SLOT_MINUTES) !== 0) {
                 $v->errors()->add('date_time', 'Время должно быть кратно 30 минутам (например 09:00:00, 09:30:00).');
                 return;
@@ -56,18 +64,20 @@ class UpdateAppointmentRequest extends FormRequest
                 ->where('patient_id', $patientId)
                 ->where('date_time', '>=', $slotStart)
                 ->where('date_time', '<',  $slotEnd)
-                ->where('id','!=',$appointment->id)
+                ->where('id', '!=', $appointment->id)
                 ->exists();
+
             if ($patientConflict) {
-                $v->errors()->add('date_time', 'У пациента уже есть запись в этот временной слот.');
+                $v->errors()->add('date_time', 'У пациента уже есть запись в этот 30-минутный слот.');
             }
 
             $doctorConflict = Appointment::query()
                 ->where('doctor_name', $doctorName)
                 ->where('date_time', '>=', $slotStart)
                 ->where('date_time', '<',  $slotEnd)
-                ->where('id','!=',$appointment->id)
+                ->where('id', '!=', $appointment->id)
                 ->exists();
+
             if ($doctorConflict) {
                 $v->errors()->add('doctor_name', 'У этого врача уже занят этот 30-минутный слот.');
             }

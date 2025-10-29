@@ -38,9 +38,14 @@ class StoreAppointmentRequest extends FormRequest
         $validator->after(function ($v) {
             $patientId  = (int) $this->input('patient_id');
             $doctorName = (string) $this->input('doctor_name');
-            $dateTime   = (string) $this->input('date_time');
+            $dateStr    = (string) $this->input('date_time');
 
-            $dt = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, config('app.timezone', 'UTC'));
+            try {
+                $dt = Carbon::createFromFormat('Y-m-d H:i:s', $dateStr, config('app.timezone', 'UTC'));
+            } catch (\Throwable $e) {
+                return;
+            }
+
             if ($dt->second !== 0 || ($dt->minute % self::SLOT_MINUTES) !== 0) {
                 $v->errors()->add('date_time', 'Время должно быть кратно 30 минутам (например 09:00:00, 09:30:00).');
                 return;
@@ -54,8 +59,9 @@ class StoreAppointmentRequest extends FormRequest
                 ->where('date_time', '>=', $slotStart)
                 ->where('date_time', '<',  $slotEnd)
                 ->exists();
+
             if ($patientConflict) {
-                $v->errors()->add('date_time', 'У пациента уже есть запись в этот временной слот.');
+                $v->errors()->add('date_time', 'У пациента уже есть запись в этот 30-минутный слот.');
             }
 
             $doctorConflict = Appointment::query()
@@ -63,6 +69,7 @@ class StoreAppointmentRequest extends FormRequest
                 ->where('date_time', '>=', $slotStart)
                 ->where('date_time', '<',  $slotEnd)
                 ->exists();
+
             if ($doctorConflict) {
                 $v->errors()->add('doctor_name', 'У этого врача уже занят этот 30-минутный слот.');
             }
